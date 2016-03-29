@@ -60,12 +60,13 @@ class Minesweeper
 
   # places mines randomly on the board
   def place_mines_on_board
+    i = 0
     while i < @nbr_mines
-      row = Random.rand(time) % @board_size
-      col = Random.rand(time) % @board_size
-      unless @board[row][col].is_mine?
+      row = Random.rand(Time.now.to_i) % @board_size
+      col = Random.rand(Time.now.to_i) % @board_size
+      unless @board[row][col].is_mine
         @board[row][col].is_mine = true;
-        i++
+        i += 1
       end
     end
   end
@@ -73,30 +74,91 @@ class Minesweeper
   # for each non-mine cell on the board, set @nbr_mines of each Cell on the board
   # to the number of mines in the immediate neighborhood.
   def fill_in_minecount_for_non_mine_cells
-
+    for i in 0...@board_size
+      for j in 0...@board_size
+        @board[i][j].nbr_mines = get_nbr_neighbor_mines(i,j);
+      end
+    end
   end
 
   # processes cell selection by user during the game
   # returns Constants::WON, Constants::LOST, or Constants::INPROGRESS
   def select_cell(row,col)
+    @board[row][col].visible = true;
 
+    # Simple Mode
+    # set_immediate_neighbor_cells_visible(row, col);
+
+    # Realistic Mode
+    set_all_neighbor_cells_visible(row, col);
+
+    if @board[row][col].is_mine
+      return Constants::LOST;
+    end
+
+    if nbr_visible_cells + @nbr_mines >= @board_size*@board_size
+      return Constants::WON;
+    end
+
+    return Constants::INPROGRESS;
   end
 
   # returns the number of mines in the immediate neighborhood of a cell
   # at location (row,col) on the board.
   def get_nbr_neighbor_mines(row,col)
-
+    mines = 0
+    unless @board[row][col].is_mine
+      offsets = [-1,0,1]
+      for x in 0...offsets.length
+        for y in 0...offsets.length
+          x_is_valid = row+offsets[x] >= 0 && row+offsets[x] < @board_size
+          y_is_valid = col+offsets[y] >= 0 && col+offsets[y] < @board_size
+          if (x_is_valid && y_is_valid)
+            is_self = offsets[x] == 0 && offsets[y] == 0
+            is_mine = @board[row+offsets[x]][col+offsets[y]].is_mine
+            if (!is_self && is_mine)
+              mines += 1
+            end
+          end
+        end
+      end
+    end
+    mines
   end
 
   # returns the number of cells that are currently visible on the board
   def nbr_visible_cells
-
+    count = 0
+    for i in 0...@board_size
+      for j in 0...@board_size
+        count += 1 if @board[i][j].visible && !@board[i][j].is_mine
+      end
+    end
+    count
   end
 
   # if the mine count of a cell at location (row,col) is zero, then make
   # the cells ONLY in the immediate neighborhood visible.
   def set_immediate_neighbor_cells_visible(row,col)
-
+    mines = 0
+    unless @board[row][col].is_mine
+      offsets = [-1,0,1]
+      for x in 0...offsets.length
+        for y in 0...offsets.length
+          x_is_valid = row+offsets[x] >= 0 && row+offsets[x] < @board_size
+          y_is_valid = col+offsets[y] >= 0 && col+offsets[y] < @board_size
+          if (x_is_valid && y_is_valid)
+            is_self = offsets[x] == 0 && offsets[y] == 0
+            is_zero = @board[row+offsets[x]][col+offsets[y]].nbr_mines == 0
+            is_visible = @board[row+offsets[x]][col+offsets[y]].visible
+            is_mine = @board[row+offsets[x]][col+offsets[y]].is_mine
+            if (!is_self && is_zero && !is_visible && !is_mine)
+              @board[row+offsets[x]][col+offsets[y]].visible = true
+            end
+          end
+        end
+      end
+    end
   end
 
   # if the mine count of a cell at location (row,col) is zero, then make
@@ -104,7 +166,26 @@ class Minesweeper
   # process for each of the cells in this set of cells that have a mine
   # count of zero, and so on.
   def set_all_neighbor_cells_visible(row,col)
-
+    mines = 0
+    unless @board[row][col].is_mine
+      offsets = [-1,0,1]
+      for x in 0...offsets.length
+        for y in 0...offsets.length
+          x_is_valid = row+offsets[x] >= 0 && row+offsets[x] < @board_size
+          y_is_valid = col+offsets[y] >= 0 && col+offsets[y] < @board_size
+          if (x_is_valid && y_is_valid)
+            is_self = offsets[x] == 0 && offsets[y] == 0
+            is_zero = @board[row+offsets[x]][col+offsets[y]].nbr_mines == 0
+            is_visible = @board[row+offsets[x]][col+offsets[y]].visible
+            is_mine = @board[row+offsets[x]][col+offsets[y]].is_mine
+            if (!is_self && is_zero && !is_visible && !is_mine)
+              @board[row+offsets[x]][col+offsets[y]].visible = true
+              set_all_neighbor_cells_visible(row+offsets[x], col+offsets[y])
+            end
+          end
+        end
+      end
+    end
   end
 
   # returns a string representation of the board
