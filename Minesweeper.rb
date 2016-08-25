@@ -1,7 +1,7 @@
 #
 #  Minesweeper game
 #
-#  Author(s): YOUR NAME(S)
+#  Author(s): Morrie Cunningham and Devin Brown
 #
 
 #
